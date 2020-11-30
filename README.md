@@ -5,3 +5,9 @@
   - TCGA-BRCA contains (1) a folder FinalModels_1MB with all final MOSTWAS TCGA-BRCA models and (2) BRCAsurivval_ICOGs_results_update.tsv with TWAS results for ICOGs GWAS summary statistics for breast cancer-specific survival
   - Simulation contains (1) power_size.tsv with simulation results for power and size of distal-added last test and (2) sims_power_r2.tsv with simulation results for power and model performance of MOSTWAS models
   - Comparison With BGW-TWAS contains (1) compareROSMAP_inPSYCHencode.tsv with results of external predictive performance of MOSTWAS and BGW-TWAS models trained in ROS/MAP and imputed into PSYCHencode data and (2) compareTCGA.tsv with results of external predicitive performance of MOSTWAS and BGW-TWAS models trained in TCGA-BRCA and imputed into a hold-out set from TCGA-BRCA
+
+2. Code used in manuscript.
+  - SimulationPipeline.R: simulation from TCGA
+  - Sample_MeTWASCode.R: sample code to run MeTWAS
+  - Sample_DePMACode.R: sample code to run DePMA
+  - Sample_BGW-TWAS_Code.sh: sample code used for BGW-TWAS in TCGA-BRCA data
