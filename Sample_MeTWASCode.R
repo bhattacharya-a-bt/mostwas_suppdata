@@ -1,4 +1,4 @@
-setwd('/pine/scr/a/b/abhattac/TCGA_omics/TCGA_omics/omics')
+### Define a vector geneList with the genes you wish to train
 tempFolder = paste0('temp',i,'/')
 if (dir.exists(tempFolder)){
 system(paste0('rm -r ',tempFolder))
@@ -9,9 +9,6 @@ if (!dir.exists(tempFolder)){
 require(bigsnpr)
 require(data.table)
 require(MOSTWAS)
-tot = fread('metwas_TCGA_R2.tsv')
-int = floor(seq(0,nrow(tot),length.out=15))
-geneList = tot$Gene[int[i]+1:int[i+1]]
 
 snpObj = snp_attach(snp_readBed('TCGA_tot.bed',
 		backingfile = paste0(tempFolder,'temp',i,'_SnpObj.bk')))
