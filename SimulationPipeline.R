@@ -1,5 +1,4 @@
-setwd('/pine/scr/a/b/abhattac/TCGA_omics/sims/')
-
+require(MOSTWAS)
 sim_params = expand.grid(c(0.05,0.2),
                          c(0.05,.2,0.5),
                          c(.05,.25),
@@ -16,8 +15,6 @@ nM = as.numeric(ppp[4])
 ngwas = 1500
 h2p = as.numeric(ppp[5])
 
-
-
 require(data.table)
 require(MOSTWAS)
 
@@ -29,120 +26,6 @@ cis.ref = subset(ref,
 trans.ref = subset(ref,
                  ref$SNP %in% subset(locs,chr == 'chr14')$snpid)
 
-#### SIMULATE GENOTYPES
-
-sim_geno <- function(geno,n){
-
-  ## estimate LD
-  G = as.matrix(geno[,-1])
-  require(pbapply)
-  mafs = pbapply(G,1,function(x) mean(x)/2)
-  G = pbapply(G,1,scale)
-  #LD = (t(G) %*% G) / nrow(G) + diag(ncol(G)) * 0.1
-  LD = (t(G) %*% G) / nrow(G) + diag(ncol(G))
-  L = chol(LD)
-  Z = t(L %*% t(matrix(rnorm(ncol(G) * n),ncol = ncol(G))))
-  Z = as.matrix(scale(Z))
-
-  return(Z)
-
-}
-
-
-sim_trait <- function(g,h2g){
-
-  n = length(g)
-
-  if (h2g > 0){
-
-    s2g = var(g)
-    s2e = s2g * ((1/h2g)-1)
-    e = rnorm(n,mean = 0, sd = sqrt(s2e))
-    y = g + e
-
-  }  else {
-
-    e = rnorm(n)
-    y = e
-
-  }
-
-  y = as.numeric(scale(y))
-  return(y)
-
-}
-
-
-
-sim_beta <- function(p.causal, eqtl_h2, n_snps){
-
-  # number of QTLs
-  n_qtls = floor(p.causal * n_snps)
-
-  # select which SNPs are causal
-  c_qtls = sample(1:n_snps,n_qtls)
-  b_qtls = rep(0,n_snps)
-
-  # sample effects from normal prior
-  b_qtls[c_qtls] = rnorm(n_qtls,
-                         mean = 0,
-                         sd = sqrt(eqtl_h2/n_qtls))
-
-  return(b_qtls)
-
-}
-
-
-sim_eqtl = function(geno.cis,
-                    geno.trans,
-                    nqtl,
-                    b_qtls.cis,
-                    b_qtls.trans,
-                    eqtl_h2.cis,
-                    eqtl_h2.trans,
-                    p.causal.trans,
-                    numMed){
-
-  ## CIS-HERTIABLE PORTION
-  Z_qtl.cis = sim_geno(geno.cis, nqtl)
-  n.cis = nrow(Z_qtl.cis)
-  p.cis = ncol(Z_qtl.cis)
-  # GRM AND LD
-  A.cis = (Z_qtl.cis %*% t(Z_qtl.cis)) / p.cis
-  LD_qtl.cis = (t(Z_qtl.cis) %*% Z_qtl.cis) / n.cis
-
-  # sim gene expression
-  gexpr.cis = sim_trait(Z_qtl.cis %*% b_qtls.cis, eqtl_h2.cis)
-
-  mediator.exp = matrix(nrow = length(gexpr.cis),
-                        ncol = numMed)
-  Z_qtl.trans = sim_geno(geno.trans, nqtl)
-  n.trans = nrow(Z_qtl.trans)
-  p.trans = ncol(Z_qtl.trans)
-  # GRM AND LD
-  A.trans = (Z_qtl.trans %*% t(Z_qtl.trans)) / p.trans
-  LD_qtl.trans = (t(Z_qtl.trans) %*% Z_qtl.trans) / n.trans
-  # sim gene expression
-  for (i in 1:numMed){
-    mediator.exp[,i] = sim_trait(Z_qtl.trans %*% b_qtls.trans[,i],
-                                 eqtl_h2.trans)
-  }
-  w_med = rnorm(numMed,mean = 0,sd = sqrt(eqtl_h2.trans/numMed))
-  gexpr.trans = c(mediator.exp %*% w_med) +
-    rnorm(nrow(mediator.exp),
-          mean = 0,
-          sd = 1 - eqtl_h2.trans)
-  fin.qtls.trans = b_qtls.trans %*% w_med
-  gexpr = gexpr.cis + gexpr.trans
-
-  return(list(Z.cis = Z_qtl.cis,
-              Z.trans = Z_qtl.trans,
-              exp = gexpr,
-              med = mediator.exp,
-              fin.qtls.trans = fin.qtls.trans))
-
-
-}
 
 trainCis <- function(pheno,
                      k = 10,
@@ -244,25 +127,6 @@ trainMeTWAS_simple <- function(pheno,
       pheno = pheno - as.numeric(predict(lmCVFit))
     }
   }
-
-
-  cisGenoMod = trainCis(pheno,
-                    k = k,
-                    Z.cis,
-                    lab = 'Cis')
-
-  cisGenoMod$Model$Mediator = 'Cis'
-  if (exists('trans.mod.df')){
-    cisGenoMod$Model = rbind(cisGenoMod$Model,trans.mod.df)
-  }
-  cisGenoMod$CVR2 = cisGenoMod$CVR2 + fe.R2
-  cisGenoMod$CVR2.cis.first = originalCis$CVR2
-  cisGenoMod$Model.cisOnly = originalCis$Model
-
-  return(cisGenoMod)
-
-
-}
 
 regress <- function(Z,pheno){
 
